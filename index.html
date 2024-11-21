@@ -6,35 +6,56 @@
     <title>File Upload</title>
 </head>
 <body>
-    <h1>Upload a File</h1>
-    <form id="uploadForm" enctype="multipart/form-data">
-        <label for="file">Choose a file:</label>
-        <input type="file" id="file" name="file" required>
+    <h1>Upload File</h1>
+    <form id="upload-form">
+        <label for="file-input">Choose a file:</label>
+        <input type="file" id="file-input" name="file" required />
+        <br><br>
         <button type="submit">Upload</button>
     </form>
 
+    <p id="status"></p>
+
     <script>
-        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
+        // Replace this with the signed URL you generate
+        const signedUrl = "https://storage.googleapis.com/signed-url11/test.txt?x-goog-signature=827d5f75c5720a599a55326ecc751e2191d45c15e5125cab32be003adadb58d86d09abd03698aab6c5f70b1dfb48a74faa1cbf46d765d2d8ab1ca922ec0279f7618abffe1701950b1a853bdcc121cfd012bebbde5181a9beb6b240b26fc1590c60ac3fb358d55f3ef9417de07453fe63bbb2272043358624bec6acabe9c7ccbf9ffe115c37667d8b030d25d3e547b995e2c4e668d1b67046a0f68f347f52c63c601aa44cc511eb37f87228aa3e3bdf7ab83838335e7749adf18e87b8138c351398626e1c906263e364fe187c5ffca8fae7dec295ce4c964811d22bae277b9ef7fd471a4769a624156196dc55848281085f7ab699a42f404d1af72d2e494dbafb&x-goog-algorithm=GOOG4-RSA-SHA256&x-goog-credential=sharefactor68%40signed-url-tests.iam.gserviceaccount.com%2F20241121%2Fus%2Fstorage%2Fgoog4_request&x-goog-date=20241121T195059Z&x-goog-expires=54000&x-goog-signedheaders=host";
 
-            const formData = new FormData();
-            const fileInput = document.getElementById('file');
-            formData.append('file', fileInput.files[0]);
+        document.getElementById('upload-form').addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent form from submitting normally
 
-            try {
-                const response = await fetch('https://us-east5-ageless-impulse-442201-j0.cloudfunctions.net/file-upload/upload', { // Replace with your Cloud Function URL
-                    method: 'POST',
-                    body: formData,
-                });
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0]; // Get the file from the input
 
-                if (!response.ok) {
-                    throw new Error('Failed to upload file');
-                }
+            if (file) {
+                // Set up the PUT request with the file
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', signedUrl, true);
+                xhr.setRequestHeader('Content-Type', file.type);  // Set the file's MIME type
 
-                alert('File uploaded successfully!');
-            } catch (error) {
-                console.error('Error uploading file:', error);
-                alert('Error uploading file');
+                // Track upload progress
+                xhr.upload.onprogress = function(event) {
+                    if (event.lengthComputable) {
+                        const percent = (event.loaded / event.total) * 100;
+                        document.getElementById('status').innerText = `Uploading: ${Math.round(percent)}%`;
+                    }
+                };
+
+                // Handle the response after the file upload
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        document.getElementById('status').innerText = 'File uploaded successfully!';
+                    } else {
+                        document.getElementById('status').innerText = 'Upload failed.';
+                    }
+                };
+
+                // Handle errors
+                xhr.onerror = function() {
+                    document.getElementById('status').innerText = 'An error occurred during the upload.';
+                };
+
+                // Send the file
+                xhr.send(file);
             }
         });
     </script>
